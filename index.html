@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbital Health Control · ISS</title>
+<meta name="description" content="Simulated ISS crew health monitoring dashboard with live ISS position.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div><h1>ORBITAL HEALTH CONTROL</h1><p>International Space Station · Crew medical monitoring</p></div>
+  <div class="hd">
+    <div><small>UTC</small><b id="utc">--:--:--</b></div>
+    <div><small>ISS FEED</small><b id="feed">...</b></div>
+  </div>
+</header>
+
+<main>
+  <section class="panel" id="mapP">
+    <h2>Ground track · ISS position</h2>
+    <canvas id="map" role="img" aria-label="World map showing the ISS ground track"></canvas>
+    <div class="tel" id="tel"></div>
+    <div class="saa" id="saa" hidden>WARNING · South Atlantic Anomaly: radiation elevated</div>
+  </section>
+
+  <section class="panel" id="stP">
+    <h2>Station layout · crew locations</h2>
+    <svg id="st" viewBox="40 0 280 200" role="img" aria-label="ISS module layout"></svg>
+    <ul class="loc" id="loc"></ul>
+  </section>
+
+  <section class="panel" id="hP">
+    <h2>Crew health</h2>
+    <div class="tabs" id="tabs"></div>
+    <div class="hero">
+      <div class="gauge">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="58" fill="none" stroke="var(--mu)" stroke-width=".5" stroke-dasharray="2 4"/>
+          <g class="sat"><circle cx="60" cy="2" r="2.4" fill="var(--warn)"/></g>
+          <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ln)" stroke-width="8"/>
+          <circle id="arc" cx="60" cy="60" r="50" fill="none" stroke="var(--ok)" stroke-width="8" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="gn" id="score">--</div>
+      </div>
+      <div class="ecgw">
+        <div class="row"><span class="live">LIVE ECG</span><b id="hrl"></b></div>
+        <canvas id="ecg" role="img" aria-label="Live ECG trace"></canvas>
+        <div class="row"><small id="met"></small><b id="slabel"></b></div>
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="two">
+      <div><h3>Alerts</h3><ul id="alerts" aria-live="polite"></ul></div>
+      <div><h3>Flight surgeon advice</h3><ul id="recs"></ul></div>
+    </div>
+    <div class="act">
+      <button class="danger" id="spike">Simulate emergency</button>
+      <button id="reset">Reset</button>
+      <button id="pause" aria-pressed="false">Pause</button>
+    </div>
+  </section>
+</main>
+<p class="note">Demo UI. Crew vitals are simulated, not real medical data. ISS position is live from wheretheiss.at, with an orbit simulation as fallback.</p>
+
+<script src="script.js" defer></script>
+</body>
+</html>
