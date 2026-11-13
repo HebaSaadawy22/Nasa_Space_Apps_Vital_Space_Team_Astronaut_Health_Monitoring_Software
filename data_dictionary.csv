@@ -1,0 +1,30 @@
+column,dtype,description,unit
+reading_id,object,"('Unique reading ID', 'ID')",ID
+astronaut_id,object,"('Astronaut identifier', 'ID')",ID
+timestamp,object,"('Measurement time in UTC', 'ISO 8601')",ISO 8601
+mission_day,int64,"('Day of mission', 'day')",day
+heart_rate,int64,"('Heart rate', 'bpm')",bpm
+systolic_bp,int64,"('Systolic blood pressure', 'mmHg')",mmHg
+diastolic_bp,int64,"('Diastolic blood pressure', 'mmHg')",mmHg
+blood_glucose,int64,"('Blood glucose', 'mg/dL')",mg/dL
+glucose_context,object,"('Glucose measurement context', 'category')",category
+body_temperature,float64,"('Body temperature', 'Celsius')",Celsius
+sleep_hours,float64,"('Daily sleep duration', 'hours')",hours
+mood_score,int64,"('Self-reported mood score', '1-5')",1-5
+activity_minutes,int64,"('Daily activity', 'minutes')",minutes
+spo2,int64,"('Oxygen saturation', '%')",%
+cabin_co2_ppm,int64,"('Cabin CO2 concentration', 'ppm')",ppm
+cabin_temp_c,float64,"('Cabin temperature', 'Celsius')",Celsius
+cabin_humidity_pct,float64,"('Cabin relative humidity', '%')",%
+radiation_dose_rate_uSv_h,float64,"('Radiation dose rate', 'uSv/h')",uSv/h
+data_source,object,"('Origin of data', 'category')",category
+hr_rolling_3d,float64,"('Previous 3-day HR average', 'bpm')",bpm
+sleep_rolling_3d,float64,"('Previous 3-day sleep average', 'hours')",hours
+systolic_rolling_3d,float64,"('Previous 3-day systolic BP average', 'mmHg')",mmHg
+mood_rolling_3d,float64,"('Previous 3-day mood average', 'score')",score
+hr_change,float64,"('HR minus previous reading', 'bpm')",bpm
+sleep_change,float64,"('Sleep minus previous reading', 'hours')",hours
+hr_deviation,float64,"('HR minus rolling baseline', 'bpm')",bpm
+sleep_deviation,float64,"('Sleep minus rolling baseline', 'hours')",hours
+systolic_deviation,float64,"('BP minus rolling baseline', 'mmHg')",mmHg
+mood_deviation,float64,"('Mood minus rolling baseline', 'score')",score
