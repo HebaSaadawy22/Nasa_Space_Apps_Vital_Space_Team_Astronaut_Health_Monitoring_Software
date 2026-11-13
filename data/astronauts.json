@@ -1,0 +1,23 @@
+[
+  {
+    "id": "A01",
+    "name": "Cmdr. Amira Hassan",
+    "role": "Commander",
+    "age": 41,
+    "mission": "Mars transit simulation"
+  },
+  {
+    "id": "A02",
+    "name": "Dr. Kenji Mori",
+    "role": "Flight surgeon (crew)",
+    "age": 45,
+    "mission": "Mars transit simulation"
+  },
+  {
+    "id": "A03",
+    "name": "Eng. Lena Novak",
+    "role": "Flight engineer",
+    "age": 36,
+    "mission": "Mars transit simulation"
+  }
+]
