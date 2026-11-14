@@ -1,1 +1,4 @@
 confluent-kafka>=2.5
+psycopg2-binary>=2.9
+scikit-learn>=1.4,<2
+joblib>=1.3

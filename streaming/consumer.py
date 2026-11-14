@@ -15,7 +15,10 @@ import signal
 from confluent_kafka import Consumer, KafkaError, Producer
 
 from . import config
+from .db import connect, init_schema, save
 from .features import FeatureEngine
+from .ml_adapter import load_predictor
+from .risk import assess
 from .validation import parse_timestamp, validate_reading
 
 NUMERIC_INT = ["mission_day", "heart_rate", "systolic_bp", "diastolic_bp", "blood_glucose",
@@ -36,12 +39,24 @@ def preprocess(r: dict) -> dict:
     return out
 
 
-def handle_processed(record: dict) -> dict:
-    """HOOK for the next steps.
+DB = None  # set in main() when PostgreSQL is available
+ML = None  # set in main() when the ML model is available
 
-    TODO (ML): record["prediction"] = model.predict(record) when record["ml_ready"]
-    TODO (DB): save the record (+ prediction/alerts) to PostgreSQL
+
+def handle_processed(record: dict) -> dict:
+    """Rule-based status, then save to PostgreSQL.
+
     """
+    if ML is not None:
+        try:
+            record["prediction"] = ML.process({k: record[k] for k in config.RAW_FIELDS})
+        except Exception as e:  # a model problem must never stop the stream
+            record["prediction"] = {"model_status": "error", "error": str(e)}
+    overall, alerts = assess(record)
+    record["overall_level"] = overall
+    record["alerts"] = alerts
+    if DB is not None:
+        save(DB, record, overall, alerts)
     return record
 
 
@@ -66,10 +81,21 @@ class Pipeline:
         return "ok", handle_processed(self.engine.process(rec))
 
 
+def ml_tag(rec: dict) -> str:
+    p = rec.get("prediction")
+    if not p:
+        return ""
+    if p.get("model_status") == "scored":
+        return f" ml={'ANOMALY' if p['anomaly_detected'] else 'normal'}({p['anomaly_score']:.2f}) risk={p.get('risk_level')}"
+    return f" ml={p.get('model_status')}"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--from-beginning", action="store_true")
     ap.add_argument("--max-messages", type=int, default=0, help="stop after N messages (0 = forever)")
+    ap.add_argument("--no-db", action="store_true", help="do not save to PostgreSQL")
+    ap.add_argument("--no-ml", action="store_true", help="do not run the ML model")
     args = ap.parse_args()
 
     group = config.CONSUMER_GROUP + ("-replay" if args.from_beginning else "")
@@ -84,6 +110,20 @@ def main() -> None:
 
     running = True
     signal.signal(signal.SIGINT, lambda *_: globals().update(_stop=True))
+    global DB, ML
+    if not args.no_ml:
+        try:
+            ML = load_predictor(reset=args.from_beginning)
+            print("ML model loaded: anomaly detection enabled")
+        except Exception as e:
+            print(f"WARNING: ML model unavailable ({e}); running without predictions")
+    if not args.no_db:
+        try:
+            DB = connect()
+            init_schema(DB)
+            print("PostgreSQL connected: saving readings and alerts")
+        except Exception as e:  # keep streaming even if the DB is down
+            print(f"WARNING: PostgreSQL unavailable ({e}); running without saving")
     pipeline, counts, total = Pipeline(), {"ok": 0, "invalid": 0}, 0
     print(f"Consuming '{config.TOPIC_RAW}' (group={group}) ... Ctrl+C to stop")
 
@@ -105,7 +145,7 @@ def main() -> None:
             if status == "ok":
                 out.produce(config.TOPIC_PROCESSED, key=payload["astronaut_id"], value=json.dumps(payload))
                 tag = "ML-READY" if payload["ml_ready"] else "warm-up"
-                print(f"OK   {payload['reading_id']} {payload['astronaut_id']} day {payload['mission_day']} [{tag}]")
+                print(f"OK   {payload['reading_id']} {payload['astronaut_id']} day {payload['mission_day']} [{tag}] level={payload['overall_level']}{ml_tag(payload)}")
             else:
                 out.produce(config.TOPIC_DEAD_LETTER, value=json.dumps(payload, default=str))
                 print(f"BAD  {payload['raw'].get('reading_id') if isinstance(payload['raw'], dict) else '?'}: {'; '.join(payload['reasons'])}")

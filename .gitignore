@@ -7,3 +7,5 @@ venv/
 .streamlit/secrets.toml
 .DS_Store
 data/*.db
+ml/artifacts/stream_state.sqlite3
+__pycache__/

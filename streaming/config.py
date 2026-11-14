@@ -54,3 +54,10 @@ ML_FEATURES = [
     "hr_change", "sleep_change",
     "hr_deviation", "sleep_deviation", "systolic_deviation", "mood_deviation",
 ]
+
+# PostgreSQL (matches docker-compose.yml)
+DB_URL = os.getenv("DB_URL", "postgresql://vitalspace:vitalspace@localhost:5432/vitalspace")
+
+# ML team's model (folder `ml/` from branch feature/machine-learning)
+ML_DIR = ROOT / "ml"
+ML_STATE_PATH = Path(os.getenv("ML_STATE_PATH", ROOT / "ml" / "artifacts" / "stream_state.sqlite3"))
