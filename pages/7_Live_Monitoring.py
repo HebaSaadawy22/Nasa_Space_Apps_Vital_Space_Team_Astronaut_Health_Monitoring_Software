@@ -1,17 +1,27 @@
 """Live monitoring page: reads the readings and alerts that the Kafka consumer saved to PostgreSQL."""
+from pathlib import Path
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
 from src.analysis.health_engine import level as lv
-from src.utils.constants import LEVEL_COLORS, LEVEL_NAMES
+from src.utils import ui
+from src.utils.constants import LEVEL_NAMES
 from streaming import config
 from streaming.db import connect
 from streaming.risk import FIELD_MAP, assess
 from src.utils.constants import FIELDS
 
+ROOT = Path(__file__).resolve().parents[1]
 st.set_page_config(page_title="Live Monitoring · Vital Space", page_icon="📡", layout="wide")
-st.title("📡 Live Monitoring")
+_css = ROOT / "assets" / "styles.css"
+if _css.exists():
+    st.markdown(f"<style>{_css.read_text()}</style>", unsafe_allow_html=True)
+_logo = ROOT / "assets" / "logo.png"
+if _logo.exists():
+    st.logo(str(_logo))
+st.title("Live Monitoring")
 st.caption("Data flows Sensors → Kafka → Python Consumer → PostgreSQL → this page. Synthetic demonstration data.")
 
 METRICS = {"heart_rate": "Heart rate (bpm)", "spo2": "SpO₂ (%)", "systolic_bp": "Systolic BP (mmHg)",
@@ -62,20 +72,23 @@ def board():
     latest = df.iloc[-1]
     lvl = int(latest["overall_level"])
 
-    c1, c2, c3, c4 = st.columns(4)
+    flagged_now = [a for a in alerts.itertuples() if a.ts == latest["ts"]]
+    ui.banner(lvl, f"Current status: {LEVEL_NAMES[lvl]}",
+              ", ".join(f"{a.indicator} ({LEVEL_NAMES[int(a.level)]})" for a in flagged_now) or "All indicators in the normal range.")
+    st.caption(f"{astronaut_label(aid)} · mission day {int(latest['mission_day'])}")
+
+    c1, c2, c3 = st.columns(3)
     c1.metric("Readings (all crew)", int(total["n"][0]))
     c2.metric("Mission day", int(latest["mission_day"]))
     c3.metric("Alert-level readings (all crew)", int(total["red"][0]))
-    c4.markdown(f"**Current status**<br><span style='color:{LEVEL_COLORS[lvl]};font-size:1.6rem'>● {LEVEL_NAMES[lvl]}</span>",
-                unsafe_allow_html=True)
 
-    st.subheader(f"Latest reading · {astronaut_label(aid)} · day {int(latest['mission_day'])}")
+    st.subheader("Latest reading")
     cols = st.columns(4)
     for i, (col, key) in enumerate(FIELD_MAP.items()):
         l = lv(key, latest[col])
         cols[i % 4].markdown(
-            f"**{FIELDS[key]['label']}**<br><span style='font-size:1.4rem'>{latest[col]:g} "
-            f"<small>{FIELDS[key]['unit']}</small></span><br><span style='color:{LEVEL_COLORS[l]}'>● {LEVEL_NAMES[l]}</span>",
+            f'<div class="vs-tile vs-l{l}"><div class="nm">{FIELDS[key]["label"]}</div>'
+            f'<div class="val">{latest[col]:g}<small>{FIELDS[key]["unit"]}</small></div>{ui.badge(l)}</div>',
             unsafe_allow_html=True)
 
     preds = df["prediction"].apply(lambda p: p if isinstance(p, dict) else {})
@@ -94,7 +107,10 @@ def board():
     st.caption("Statistical anomaly detection on synthetic data. Not a medical diagnosis.")
 
     st.subheader("Trend")
-    fig = px.line(df, x="ts", y=metric, markers=True, labels={"ts": "Time", metric: METRICS[metric]})
+    fig = px.line(df, x="ts", y=metric, markers=True, labels={"ts": "Time", metric: METRICS[metric]},
+                  color_discrete_sequence=["#4fb8e0"])
+    fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", margin=dict(l=10, r=10, t=10, b=10),
+                      font_color="#8a9bb5", xaxis=dict(gridcolor="#1e2d45"), yaxis=dict(gridcolor="#1e2d45"))
     flagged = df[df["anomaly"]]
     if not flagged.empty:
         fig.add_scatter(x=flagged["ts"], y=flagged[metric], mode="markers", name="ML anomaly",
